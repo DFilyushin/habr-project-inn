@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "habr-project-inn"
+version = "0.1.0"
+description = ""
+authors = ["DFilyushin <dvfilyushin@fintechiq.ru>"]
+readme = "README.md"
+packages = [{include = "habr_project_inn"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+aio-pika = "^9.0.5"
+motor = "^3.1.2"
+pydantic = "^1.10.7"
+injector = "^0.20.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
