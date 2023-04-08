@@ -1,9 +1,9 @@
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Type, Tuple, Dict, List, Coroutine, Callable
+from typing import Type, List, Callable
 
 from injector import singleton, provider, Injector, Module
-# from starlette.requests import Request
+from starlette.requests import Request
 
 from core.event_mixins import EventLiveProbeMixin, StartupEventMixin, ShutdownEventMixin
 from settings import Settings
@@ -78,5 +78,5 @@ class ContainerManager:
         await asyncio.gather(*handlers)
 
 
-# async def get_container_injector(request: Request) -> Container:
-#     return request.app.container
+async def get_container_injector(request: Request) -> Container:
+    return request.app.container
