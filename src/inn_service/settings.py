@@ -5,15 +5,17 @@ from pydantic import BaseSettings
 
 class Settings(BaseSettings):
     app_name: str = 'INN service'
+    app_request_retry_times: int
+    app_request_retry_sec: int
 
-    db_mongo_host: str
-    db_mongo_port: str
-    db_mongo_user: str
-    db_mongo_pass: str
-    db_mongo_name: str
-    db_mongo_rs: Optional[str] = None
-    db_mongo_auth: str
-    db_mongo_timeout_server_select: int = 5000
+    mongo_host: str
+    mongo_port: str
+    mongo_user: str
+    mongo_pass: str
+    mongo_name: str
+    mongo_rs: Optional[str] = None
+    mongo_auth: str
+    mongo_timeout_server_select: int = 5000
 
     rabbitmq_host: str
     rabbitmq_port: int
@@ -25,19 +27,20 @@ class Settings(BaseSettings):
     rabbitmq_source_queue_name: str
 
     client_nalog_url: str
+    client_nalog_timeout_sec: int
 
     @property
     def mongo_dsn(self) -> str:
         mongo_dsn = 'mongodb://{}:{}@{}:{}/{}'.format(
-            self.db_mongo_user,
-            self.db_mongo_pass,
-            self.db_mongo_host,
-            self.db_mongo_port,
-            self.db_mongo_auth
+            self.mongo_user,
+            self.mongo_pass,
+            self.mongo_host,
+            self.mongo_port,
+            self.mongo_auth
         )
 
-        if self.db_mongo_rs:
-            mongo_dsn += f'?replicaSet={self.db_mongo_rs}'
+        if self.mongo_rs:
+            mongo_dsn += f'?replicaSet={self.mongo_rs}'
 
         return mongo_dsn
 
