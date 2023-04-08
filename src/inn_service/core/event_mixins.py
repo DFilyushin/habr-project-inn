@@ -1,31 +1,12 @@
 from abc import ABC, abstractmethod
-from asyncio import iscoroutinefunction
-from enum import Enum
-from typing import Any, List
+from typing import Coroutine
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel
 
 
 class LiveProbeStatus(BaseModel):
     service_name: str
     status: bool
-
-
-class EventTypeEnum(str, Enum):
-    startup = 'startup'
-    shutdown = 'shutdown'
-
-
-class EventSubscriberModel(BaseModel):
-    handler: Any
-    event: EventTypeEnum
-    priority: int = 100
-
-    @validator('handler')
-    def validate_handler(cls, value):
-        if iscoroutinefunction(value):
-            raise ValueError('The handler should be of the type: "coroutine"')
-        return value
 
 
 class EventLiveProbeMixin(ABC):
@@ -35,11 +16,15 @@ class EventLiveProbeMixin(ABC):
         raise NotImplementedError
 
 
-class EventSubscriberMixin(ABC):
-    HIGH_PRIORITY = 1
-    MIDDLE_PRIORITY = 100
-    LOW_PRIORITY = 200
+class StartupEventMixin(ABC):
 
     @abstractmethod
-    def get_subscriber_event_collection(self) -> List[EventSubscriberModel]:
+    def startup(self) -> Coroutine:
+        raise NotImplementedError
+
+
+class ShutdownEventMixin(ABC):
+
+    @abstractmethod
+    def shutdown(self) -> Coroutine:
         raise NotImplementedError

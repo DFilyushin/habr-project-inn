@@ -1,12 +1,9 @@
 import asyncio
 from dataclasses import dataclass
-from typing import Optional, List, Iterable
+from typing import Optional, List, Iterable, Coroutine
 
-from inn_service.connection_managers.mongo_connection_manager import MongoConnectionManager
-from inn_service.core.event_mixins import (
-    EventSubscriberMixin,
-    EventSubscriberModel,
-)
+from connection_managers.mongo_connection_manager import MongoConnectionManager
+from core.event_mixins import StartupEventMixin
 from settings import Settings
 
 
@@ -16,7 +13,10 @@ class IndexDef:
     sort: int
 
 
-class BaseRepository(EventSubscriberMixin):
+class BaseRepository(StartupEventMixin):
+
+    def startup(self) -> Coroutine:
+        return self.create_indexes()
 
     def __init__(
             self,
@@ -24,7 +24,7 @@ class BaseRepository(EventSubscriberMixin):
             setting: Settings
     ) -> None:
         self.mongodb_connection_manager = mongodb_connection_manager
-        self.database = setting.db_mongo_name
+        self.database = setting.mongo_name
 
     @property
     def collection_name(self) -> str:
@@ -93,11 +93,3 @@ class BaseRepository(EventSubscriberMixin):
     async def add_nested_item(self, criteria: dict, data: dict) -> None:
         connection = await self.mongodb_connection_manager.get_connection()
         await connection[self.database][self.collection_name].update_one(criteria, {'$push': data})
-
-    def get_subscriber_event_collection(self) -> List[EventSubscriberModel]:
-        """
-        Регистрация событий при старте приложения
-        """
-        return [
-            EventSubscriberModel(handler=self.create_indexes(), event=EventSubscriberMixin.ON_STARTUP_EVENT),
-        ]

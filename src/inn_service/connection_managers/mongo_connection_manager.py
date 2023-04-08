@@ -1,31 +1,32 @@
-from typing import List
+from typing import List, Any, Coroutine
 
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import ServerSelectionTimeoutError
 from pymongo.mongo_client import MongoClient
 
-from inn_service.core.event_mixins import (
-    EventLiveProbeMixin,
-    LiveProbeStatus,
-    EventSubscriberModel,
-    EventSubscriberMixin,
-    EventTypeEnum,
-)
-from inn_service.core.exceptions import MongoConnectionError
-from inn_service.settings import Settings
+from core.event_mixins import EventLiveProbeMixin, LiveProbeStatus, StartupEventMixin, ShutdownEventMixin
+from core.exceptions import MongoConnectionError
+from settings import Settings
 from logger import AppLogger
 
 
-class MongoConnectionManager(EventSubscriberMixin, EventLiveProbeMixin):
+class MongoConnectionManager(StartupEventMixin, ShutdownEventMixin, EventLiveProbeMixin):
+
     def __init__(self, settings: Settings, logger: AppLogger):
         self.logger = logger
         self._mongodb_uri = settings.mongo_dsn
-        self._timeout = settings.db_mongo_timeout_server_select
+        self._timeout = settings.mongo_timeout_server_select
         self._connection: MongoClient = AsyncIOMotorClient(
             self._mongodb_uri,
             serverSelectionTimeoutMS=self._timeout,
             connect=False
         )
+
+    def shutdown(self) -> Coroutine:
+        return self.close_connection()
+
+    def startup(self) -> Coroutine:
+        return self.create_connection()
 
     async def get_connection(self) -> AsyncIOMotorClient:
         is_connected = await self.is_connected()
@@ -45,12 +46,6 @@ class MongoConnectionManager(EventSubscriberMixin, EventLiveProbeMixin):
     async def close_connection(self):
         if self._connection is not None:
             self._connection.close()
-
-    def get_subscriber_event_collection(self) -> List[EventSubscriberModel]:
-        return [
-            EventSubscriberModel(handler=self.create_connection(), event=EventTypeEnum.startup),
-            EventSubscriberModel(handler=self.close_connection(), event=EventTypeEnum.shutdown)
-        ]
 
     async def is_connected(self) -> LiveProbeStatus:
         try:

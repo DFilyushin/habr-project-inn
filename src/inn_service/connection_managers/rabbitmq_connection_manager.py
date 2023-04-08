@@ -1,22 +1,16 @@
 import json
-from typing import Optional, List
+from typing import Optional, List, Coroutine
 
 from aio_pika import Exchange, connect_robust, Message, Channel
 from aio_pika.connection import Connection
 from aiormq.exceptions import ChannelPreconditionFailed
 
-from inn_service.core.event_mixins import (
-    EventLiveProbeMixin,
-    LiveProbeStatus,
-    EventSubscriberMixin,
-    EventSubscriberModel,
-    EventTypeEnum,
-)
-from inn_service.settings import Settings
-from inn_service.logger import AppLogger
+from core.event_mixins import EventLiveProbeMixin, LiveProbeStatus, StartupEventMixin, ShutdownEventMixin
+from settings import Settings
+from logger import AppLogger
 
 
-class RabbitConnectionManager(EventSubscriberMixin, EventLiveProbeMixin):
+class RabbitConnectionManager(StartupEventMixin, ShutdownEventMixin, EventLiveProbeMixin):
     def __init__(self, settings: Settings, logger: AppLogger) -> None:
         self._dsn = settings.rabbitmq_dsn
         self.prefetch_count = settings.rabbitmq_prefetch_count
@@ -27,12 +21,11 @@ class RabbitConnectionManager(EventSubscriberMixin, EventLiveProbeMixin):
         self.connected: bool = False
         self.logger = logger
 
-    def get_subscriber_event_collection(self) -> List[EventSubscriberModel]:
-        """Регистрация событий"""
-        return [
-            EventSubscriberModel(handler=self.create_connection(), event=EventTypeEnum.startup),
-            EventSubscriberModel(handler=self.close_connection(), event=EventTypeEnum.shutdown)
-        ]
+    def shutdown(self) -> Coroutine:
+        return self.close_connection()
+
+    def startup(self) -> Coroutine:
+        return self.create_connection()
 
     async def create_connection(self) -> None:
         self.logger.info('Create connection RabbitMQ')
@@ -113,7 +106,6 @@ class RabbitConnectionManager(EventSubscriberMixin, EventLiveProbeMixin):
         dl_queue_name = f'dl-{queue_name}'
         queue_arguments = {}
 
-        # Использование повторителя в очереди, построенного на dead-letter очередях
         if use_retry:
             queue_arguments['x-dead-letter-exchange'] = exchange.name
             queue_arguments['x-dead-letter-routing-key'] = dl_queue_name
@@ -122,7 +114,7 @@ class RabbitConnectionManager(EventSubscriberMixin, EventLiveProbeMixin):
             except ChannelPreconditionFailed:
                 self.logger.warning('PRECONDITION_FAILED - trying to reset Dead Letter queue')
                 await self.delete_dl_queue_after_error(dl_queue_name=dl_queue_name)
-                await self.create_queue_listener(queue_name, callback_worker, use_retry, retry_ttl)  # рекурсивно
+                await self.create_queue_listener(queue_name, callback_worker, use_retry, retry_ttl)
                 self.logger.info(f'Dead Letter queue <{dl_queue_name}> recreated')
                 return
 
@@ -145,8 +137,8 @@ class RabbitConnectionManager(EventSubscriberMixin, EventLiveProbeMixin):
             queue_arguments = {}
         connection = await self.get_connection()
         channel = await connection.channel()
-        queue = await channel.declare_queue(name, auto_delete=False, durable=True, arguments=queue_arguments)
         exchange = await self.get_exchange()
+        queue = await channel.declare_queue(name, auto_delete=False, durable=True, arguments=queue_arguments)
         await queue.bind(exchange, name)
 
     async def send_data_by_queue(self, data: dict, queue_name: str) -> None:
@@ -159,12 +151,10 @@ class RabbitConnectionManager(EventSubscriberMixin, EventLiveProbeMixin):
         return LiveProbeStatus(service_name='RabbitMQ', status=self.connected)
 
     def on_close_connection(self, *args):
-        """Потеря соединения"""
         self.logger.error('Lost connection to RabbitMQ...')
         self.connected = False
 
     def on_connection_restore(self, *args):
-        """Восстановление соединения"""
         self.logger.info('Connection to RabbitMQ has been restored...')
         self._channel = None
         self._exchange = None
