@@ -1,35 +1,47 @@
 from abc import ABC, abstractmethod
-from typing import Type, Optional
+from typing import Optional
 
 from logger import AppLogger
-from pydantic import BaseModel
 
-from inn_service.connection_managers.rabbitmq_connection_manager import RabbitConnectionManager
-from inn_service.models.model import RequestModel
-from inn_service.repositories.request_mongo_repository import RequestRepository
+
+from connection_managers.rabbitmq_connection_manager import RabbitConnectionManager
 from settings import Settings
-from inn_service.services.inn_service import InnService
 
 
-class RequestHandler:
+class BaseHandler(ABC):
     """
     Базовый обработчик
     """
-    def __init__(self, settings: Settings, logger: AppLogger, service: InnService) -> None:
+    def __init__(
+            self,
+            settings: Settings,
+            logger: AppLogger,
+            rabbitmq_connection: RabbitConnectionManager
+    ) -> None:
         self.settings = settings
         self.logger = logger
-        self.service = service
+        self.rabbitmq_connection = rabbitmq_connection
 
+    @abstractmethod
+    def get_use_retry(self) -> bool:
+        raise NotImplementedError
+
+    def get_retry_ttl(self) -> int:
+        return 0
+
+    @abstractmethod
+    def get_source_queue(self) -> str:
+        raise NotImplementedError
+
+    def convert_seconds_to_mseconds(self, value: int) -> int:
+        return value * 1000
+
+    @abstractmethod
     async def run_handler(
             self,
-            serializer: BaseModel,
+            message: dict,
             request_id: Optional[str],
             result_queue: Optional[str],
             count_retry: Optional[int] = 0
     ) -> bool:
-        """
-        Основной обработчик сообщений
-        Должен быть реализован в потомке
-        """
-        self.logger.debug('')
         raise NotImplementedError

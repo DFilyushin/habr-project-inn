@@ -1,4 +1,3 @@
-import asyncio
 import json
 from typing import List, Callable
 
@@ -6,8 +5,8 @@ from aio_pika import IncomingMessage
 from logger import AppLogger
 from pydantic import ValidationError
 
-from inn_service.connection_managers.rabbitmq_connection_manager import RabbitConnectionManager
-from inn_service.infrastructure.handlers.base_handler import BaseHandler
+from connection_managers.rabbitmq_connection_manager import RabbitConnectionManager
+from infrastructure.handlers.base_handler import BaseHandler
 from settings import Settings
 
 
@@ -61,7 +60,6 @@ class QueueManager:
         """
         Создание динамической функции для обработки сообщений из mq
         """
-
         async def _function(message: IncomingMessage) -> None:
             message_content = message.body.decode('utf-8')
             result_queue = message.reply_to
@@ -69,30 +67,14 @@ class QueueManager:
 
             try:
                 data = json.loads(message_content)
-
-                request_id = data.get('request_id')
-
-                if handler.control_header_params():  # Контроль заголовков включен?
-                    if not request_id:
-                        error_message = "Request doesn't contain header fields (x_creator_id or request_id)."
-                        self.logger.error(error_message)
-
-                        if result_queue:
-                            await handler.handle_validation_error(request_id, error_message, result_queue)
-
-                        await message.ack()
-                        return
-
-                serialized_data = handler.serializer(**data)
-
+                request_id = data.get('requestId')
                 count_retry = self.get_message_retry(message)
 
-                result = await handler.run_handler(serialized_data, request_id, result_queue, count_retry)
+                is_processed = await handler.run_handler(data, request_id, result_queue, count_retry)
 
-                if result:
+                if is_processed:
                     await message.ack()
                 else:
-                    await handler.handle_false_response(serialized_data)
                     await message.reject()
 
             except json.JSONDecodeError as exc:

@@ -4,3 +4,7 @@ class MongoConnectionError(Exception):
 
     def __str__(self):
         return f'Mongo connection problem: {self.message}'
+
+
+class NalogApiClientException(Exception):
+    pass

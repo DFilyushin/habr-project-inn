@@ -15,9 +15,6 @@ class IndexDef:
 
 class BaseRepository(StartupEventMixin):
 
-    def startup(self) -> Coroutine:
-        return self.create_indexes()
-
     def __init__(
             self,
             mongodb_connection_manager: MongoConnectionManager,
@@ -33,6 +30,9 @@ class BaseRepository(StartupEventMixin):
     @property
     def collection_indexes(self) -> Iterable[IndexDef]:
         raise NotImplementedError
+
+    def startup(self) -> Coroutine:
+        return self.create_indexes()
 
     async def create_index(self, field_name: str, sort_id: int) -> None:
         """

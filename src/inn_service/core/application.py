@@ -1,12 +1,13 @@
 import asyncio
-import traceback
 from typing import Type
-from injector import Injector
 
-from inn_service.connection_managers.rabbitmq_connection_manager import RabbitConnectionManager
-from inn_service.core.container_manager import Container, ContainerManager
-from inn_service.settings import Settings
-from inn_service.logger import AppLogger
+from core.container_manager import Container, ContainerManager
+from infrastructure.queues.queue_manager import QueueManager
+from infrastructure.http_server.http_server_manager import ServerAPIManager
+from infrastructure.handlers.request_handler import RequestHandler
+from services.live_probe_service import LiveProbeService
+from settings import Settings
+from logger import AppLogger
 
 
 class Application:
@@ -17,19 +18,37 @@ class Application:
         self.container = self.container_manager.get_container()
         self.settings = self.container.get(Settings)
         self.logger = self.container.get(AppLogger)
+        self.live_probe_service = self.container.get(LiveProbeService)
+        self.queue_manager = self.container.get(QueueManager)
         self.app_name = self.settings.app_name
+        self.http_server = None
+
+    def init_application(self):
+        self.http_server = ServerAPIManager(self.container)
+
+        request_handler = self.container.get(RequestHandler)
+        self.queue_manager.add_handler(request_handler)
+
+        live_probe_handlers = self.container_manager.get_live_probe_handler_collection()
+        for handler in live_probe_handlers:
+            self.live_probe_service.add_component(handler)
 
     def run(self) -> None:
         self.logger.info(f'Starting application {self.app_name}')
+
+        self.init_application()
+
         try:
             self.loop.run_until_complete(self.container_manager.run_startup())
 
-            # tasks = asyncio.gather(
-            #     self.api_server.serve(),
-            #     self.queue_manager.run_handlers_async()
-            # )
-            # self.loop.run_until_complete(tasks)
-        except Exception as exception:
+            tasks = asyncio.gather(
+                self.http_server.serve(),
+                self.queue_manager.run_handlers_async(),
+            )
+            self.loop.run_until_complete(tasks)
+
+            self.loop.run_forever()
+        except BaseException as exception:
             exit(1)
         finally:
             self.loop.run_until_complete(self.container_manager.run_shutdown())

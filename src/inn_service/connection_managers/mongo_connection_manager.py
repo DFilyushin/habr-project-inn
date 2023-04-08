@@ -1,7 +1,7 @@
 from typing import List, Any, Coroutine
 
 from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo.errors import ServerSelectionTimeoutError
+from pymongo.errors import ServerSelectionTimeoutError, OperationFailure
 from pymongo.mongo_client import MongoClient
 
 from core.event_mixins import EventLiveProbeMixin, LiveProbeStatus, StartupEventMixin, ShutdownEventMixin
@@ -15,8 +15,9 @@ class MongoConnectionManager(StartupEventMixin, ShutdownEventMixin, EventLivePro
     def __init__(self, settings: Settings, logger: AppLogger):
         self.logger = logger
         self._mongodb_uri = settings.mongo_dsn
+        self._mongo_db = settings.mongo_name
         self._timeout = settings.mongo_timeout_server_select
-        self._connection: MongoClient = AsyncIOMotorClient(
+        self._connection: AsyncIOMotorClient = AsyncIOMotorClient(
             self._mongodb_uri,
             serverSelectionTimeoutMS=self._timeout,
             connect=False
@@ -39,8 +40,10 @@ class MongoConnectionManager(StartupEventMixin, ShutdownEventMixin, EventLivePro
     async def create_connection(self) -> None:
         self.logger.info('Create connection MongoDB')
         try:
-            self._connection.is_mongos
-        except ServerSelectionTimeoutError as exc:
+            db = self._connection.get_database(self._mongo_db)
+            await db.list_collection_names()
+        except (ServerSelectionTimeoutError, OperationFailure) as exc:
+            self.logger.error('Error connected to Mongo', details=str(exc))
             raise MongoConnectionError(str(exc))
 
     async def close_connection(self):

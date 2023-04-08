@@ -1,11 +1,17 @@
 from injector import singleton, provider
 import logging
 
-from inn_service.core.container_manager import Container
-from inn_service.settings import Settings
-from inn_service.logger import AppLogger
-from inn_service.connection_managers.rabbitmq_connection_manager import RabbitConnectionManager
-from inn_service.connection_managers.mongo_connection_manager import MongoConnectionManager
+from core.container_manager import Container
+from settings import Settings
+from logger import AppLogger
+from connection_managers.rabbitmq_connection_manager import RabbitConnectionManager
+from connection_managers.mongo_connection_manager import MongoConnectionManager
+from services.inn_service import InnService
+from services.live_probe_service import LiveProbeService
+from infrastructure.queues.queue_manager import QueueManager
+from infrastructure.handlers.request_handler import RequestHandler
+from clients.inn_nalog_client import NalogApiClient
+from repositories.request_mongo_repository import RequestRepository
 
 
 class ApplicationContainer(Container):
@@ -35,3 +41,50 @@ class ApplicationContainer(Container):
     @provider
     def provide_rabbitmq_connection(self, settings: Settings, logger: AppLogger) -> RabbitConnectionManager:
         return RabbitConnectionManager(settings, logger)
+
+    @singleton
+    @provider
+    def provide_nalog_api_client(self, settings: Settings, logger: AppLogger) -> NalogApiClient:
+        return NalogApiClient(settings, logger)
+
+    @singleton
+    @provider
+    def provide_request_repository(self, settings: Settings, mongo_connection: MongoConnectionManager) -> RequestRepository:
+        return RequestRepository(mongo_connection, settings)
+
+    @singleton
+    @provider
+    def provide_inn_service(
+            self,
+            settings: Settings,
+            logger: AppLogger,
+            nalog_api_client: NalogApiClient,
+            request_repository: RequestRepository
+    ) -> InnService:
+        return InnService(settings, logger, nalog_api_client, request_repository)
+
+    @singleton
+    @provider
+    def provide_queue_manager(
+            self,
+            settings: Settings,
+            logger: AppLogger,
+            rabbitmq: RabbitConnectionManager
+    ) -> QueueManager:
+        return QueueManager(settings, logger, rabbitmq)
+
+    @singleton
+    @provider
+    def provide_request_handler(
+            self,
+            settings: Settings,
+            logger: AppLogger,
+            inn_service: InnService,
+            rabbitmq_connection_manager: RabbitConnectionManager
+    ) -> RequestHandler:
+        return RequestHandler(settings, logger, rabbitmq_connection_manager, inn_service)
+
+    @singleton
+    @provider
+    def provide_live_probe_service(self, logger: AppLogger) -> LiveProbeService:
+        return LiveProbeService(logger)

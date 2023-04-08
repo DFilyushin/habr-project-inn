@@ -1,6 +1,5 @@
-from inn_service.core.application import Application
-from inn_service.app_container import ApplicationContainer
-
+from core.application import Application
+from app_container import ApplicationContainer
 
 application = Application(ApplicationContainer)
 application.run()
