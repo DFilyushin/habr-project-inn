@@ -27,9 +27,9 @@ class ServerAPIManager:
     def __init__(self, container: Injector) -> None:
         self.container = container
         settings = self.container.get(Settings)
-        self.host = settings.app_http_host
-        self.port = settings.app_http_port
-        self.http_handler = settings.app_http_handler
+        self.host = settings.http_host
+        self.port = settings.http_port
+        self.http_handler = settings.http_handler
         self.api_server: Optional[Server] = None
         self.api_application = None
 

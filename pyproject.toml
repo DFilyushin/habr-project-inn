@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "habr-project-inn"
 version = "0.1.0"
-description = ""
-authors = ["dmitriy.filyushin <dmitriy.filyushin@yandex.ru>"]
+description = "INN service"
+authors = ["Dmitriy Filyushin <dmitriy.filyushin@yandex.ru>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
@@ -15,6 +15,7 @@ aiohttp = "~3.8.4"
 fastapi = "~0.95.0"
 uvicorn = "~0.21.1"
 fastapi-utils = "~0.2.1"
+typer = "~0.7.0"
 
 
 [build-system]

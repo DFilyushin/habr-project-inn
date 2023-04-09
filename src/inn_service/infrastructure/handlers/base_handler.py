@@ -22,6 +22,12 @@ class BaseHandler(ABC):
         self.logger = logger
         self.rabbitmq_connection = rabbitmq_connection
 
+    def __repr__(self):
+        return self.handler_name()
+
+    def handler_name(self) -> str:
+        return 'BaseHandler'
+
     @abstractmethod
     def get_use_retry(self) -> bool:
         raise NotImplementedError
@@ -35,6 +41,10 @@ class BaseHandler(ABC):
 
     def convert_seconds_to_mseconds(self, value: int) -> int:
         return value * 1000
+
+    @abstractmethod
+    def get_error_response(self, request_id: str, error_message: str) -> dict:
+        raise NotImplementedError
 
     @abstractmethod
     async def run_handler(

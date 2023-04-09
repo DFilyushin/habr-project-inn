@@ -43,8 +43,11 @@ class RequestModel(BaseModel):
 
 
 class RequestDTO(BaseModel):
-    request_id: str
-    inn: str
-    details: Optional[str]
-    cashed: bool = False
-    elapsed_time: float
+    request_id: Optional[str] = Field(alias='requestId')
+    inn: str = Field(alias='inn')
+    details: Optional[str] = Field('', alias='details')
+    cashed: bool = Field(False, alias='cached')
+    elapsed_time: float = Field(alias='elapsedTime')
+
+    class Config:
+        allow_population_by_field_name = True

@@ -24,17 +24,17 @@ class QueueManager:
         self.settings = settings
         self.logger = logger
         self.connection_manager = queue_connection_manager
-        self.handlers: List[BaseHandler] = []
+        self._handlers: List[BaseHandler] = []
         self._exchange = None
 
     def add_handler(self, item: BaseHandler):
-        self.handlers.append(item)
+        self._handlers.append(item)
 
     async def run_handlers_async(self) -> None:
         """
         Инициализация обработчиков
         """
-        for handler in self.handlers:
+        for handler in self._handlers:
             await self._create_consumer(handler)
 
     async def _create_consumer(self, item: BaseHandler) -> None:
@@ -46,7 +46,10 @@ class QueueManager:
             item.get_retry_ttl()
         )
 
-    def get_message_retry(self, message: IncomingMessage) -> int:
+    async def _send_error_response(self, response: dict, queue: str) -> None:
+        await self.connection_manager.send_data_in_queue(response, queue)
+
+    def _get_message_retry(self, message: IncomingMessage) -> int:
         """
         Получить количество повторов пересылки сообщения
         """
@@ -60,6 +63,7 @@ class QueueManager:
         """
         Создание динамической функции для обработки сообщений из mq
         """
+
         async def _function(message: IncomingMessage) -> None:
             message_content = message.body.decode('utf-8')
             result_queue = message.reply_to
@@ -68,7 +72,7 @@ class QueueManager:
             try:
                 data = json.loads(message_content)
                 request_id = data.get('requestId')
-                count_retry = self.get_message_retry(message)
+                count_retry = self._get_message_retry(message)
 
                 is_processed = await handler.run_handler(data, request_id, result_queue, count_retry)
 
@@ -78,28 +82,23 @@ class QueueManager:
                     await message.reject()
 
             except json.JSONDecodeError as exc:
-                self.logger.error(f'Unable to parse message. Description: "{exc}"')
+                self.logger.error('Unable to parse message.', details=str(exc), message=message_content)
                 await message.ack()
 
             except ValidationError as exc:
                 error_message = f'Request body content error. {str(exc.errors())}'
                 self.logger.error(error_message)
                 if result_queue:
-                    await handler.handle_validation_error(request_id, error_message, result_queue)
+                    response = handler.get_error_response(request_id, error_message)
+                    await self._send_error_response(response, result_queue)
                 await message.ack()
 
             except Exception as ex:
-                error_message = f'Handler error. {handler=} {type(ex)=} {ex=}'
-                self.logger.error(error_message, reply_to=result_queue, message_id=message.message_id)
+                error_message = f'Handler {handler=} error. Type error: {type(ex)=}, message: {str(ex)}'
+                self.logger.error(error_message, reply_to=result_queue, request_id=request_id)
                 if result_queue:
-                    await self._send_error_response(request_id, error_message, result_queue)
+                    response = handler.get_error_response(request_id, error_message)
+                    await self._send_error_response(response, result_queue)
                 await message.ack()
 
         return _function
-
-    async def _send_error_response(self, request_id: str, error_message: str, queue: str) -> None:
-        response_message = {
-            'request_id': request_id,
-            'error': error_message
-        }
-        await self.connection_manager.send_data_by_queue(response_message, queue)

@@ -7,9 +7,10 @@ class Settings(BaseSettings):
     app_name: str = 'INN service'
     app_request_retry_times: int
     app_request_retry_sec: int
-    app_http_host: str
-    app_http_port: int
-    app_http_handler: str = 'asyncio'
+
+    http_host: str
+    http_port: int
+    http_handler: str = 'asyncio'
 
     mongo_host: str
     mongo_port: str
@@ -31,6 +32,8 @@ class Settings(BaseSettings):
 
     client_nalog_url: str
     client_nalog_timeout_sec: int
+    client_nalog_retries: int
+    client_nalog_wait_sec: int
 
     @property
     def mongo_dsn(self) -> str:

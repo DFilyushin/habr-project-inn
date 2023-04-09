@@ -5,6 +5,7 @@ from typing import Optional
 
 import aiohttp
 
+from clients.utils import retry
 from core.exceptions import NalogApiClientException
 from serializers.nalog_api_serializer import NalogApiRequestSerializer
 from settings import Settings
@@ -39,10 +40,17 @@ USER_AGENTS = [
 
 
 class NalogApiClient:
+    CLIENT_EXCEPTIONS = (
+        NalogApiClientException,
+        aiohttp.ClientProxyConnectionError,
+        aiohttp.ServerTimeoutError,
+    )
 
     def __init__(self, settings: Settings, logger: AppLogger):
         self.nalog_api_service_url = settings.client_nalog_url
         self.request_timeout = settings.client_nalog_timeout_sec
+        self.retries_times = settings.client_nalog_retries
+        self.retries_wait = settings.client_nalog_wait_sec
         self.logger = logger
         self.timeout = aiohttp.ClientTimeout(total=self.request_timeout)
 
@@ -70,8 +78,9 @@ class NalogApiClient:
 
         form_data = nalog_api_request.dict(by_alias=True)
 
-        async with aiohttp.ClientSession(timeout=self.timeout, headers=self._headers) as session:
-            async with session.post(url=self.nalog_api_service_url, data=form_data) as response:
+        @retry(self.CLIENT_EXCEPTIONS, logger=self.logger, attempts=self.retries_times, wait_sec=self.retries_wait)
+        async def make_request(client_session: aiohttp.ClientSession):
+            async with client_session.post(url=self.nalog_api_service_url, data=form_data) as response:
                 if response.status not in [http.HTTPStatus.OK, http.HTTPStatus.NOT_FOUND]:
                     response_text = await response.text()
                     raise NalogApiClientException(response_text)
@@ -86,3 +95,6 @@ class NalogApiClient:
                     return data.get('inn')
                 else:
                     raise NalogApiClientException(f'Unable to parse response! Details: {response}')
+
+        async with aiohttp.ClientSession(timeout=self.timeout, headers=self._headers) as session:
+            return await make_request(session)

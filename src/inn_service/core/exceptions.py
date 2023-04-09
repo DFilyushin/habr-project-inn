@@ -8,3 +8,8 @@ class MongoConnectionError(Exception):
 
 class NalogApiClientException(Exception):
     pass
+
+
+class HandlerNoRequestIdException(Exception):
+    def __str__(self):
+        return 'Need to specify requestId attribute.'

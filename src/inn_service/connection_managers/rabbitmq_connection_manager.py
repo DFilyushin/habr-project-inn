@@ -1,5 +1,5 @@
 import json
-from typing import Optional, List, Coroutine
+from typing import Optional, Coroutine, Callable
 
 from aio_pika import Exchange, connect_robust, Message, Channel
 from aio_pika.connection import Connection
@@ -26,6 +26,9 @@ class RabbitConnectionManager(StartupEventMixin, ShutdownEventMixin, EventLivePr
 
     def startup(self) -> Coroutine:
         return self.create_connection()
+
+    async def is_connected(self) -> LiveProbeStatus:
+        return LiveProbeStatus(service_name='RabbitMQ', status=self.connected)
 
     async def create_connection(self) -> None:
         self.logger.info('Create connection RabbitMQ')
@@ -85,21 +88,10 @@ class RabbitConnectionManager(StartupEventMixin, ShutdownEventMixin, EventLivePr
     async def create_queue_listener(
             self,
             queue_name: str,
-            callback_worker,
+            callback_worker: Callable,
             use_retry: bool = False,
             retry_ttl: int = 0,
     ) -> None:
-        """
-        Создание слушателя очереди. При наличии use_retry создаётся очередь с поддержкой dead_letter и
-        возможностью переотправки отклонённых
-        сообщений.
-        @param queue_name: Имя очереди
-        @param callback_worker: Функция консьюмера
-        @param use_retry: Использование механизма повтора через мёртвые очереди
-        @param retry_ttl: Кол-во м/с через которые будет выполнять повтор
-        @return: None
-        """
-
         channel = await self.get_channel()
         exchange = await self.get_exchange()
 
@@ -141,14 +133,11 @@ class RabbitConnectionManager(StartupEventMixin, ShutdownEventMixin, EventLivePr
         queue = await channel.declare_queue(name, auto_delete=False, durable=True, arguments=queue_arguments)
         await queue.bind(exchange, name)
 
-    async def send_data_by_queue(self, data: dict, queue_name: str) -> None:
+    async def send_data_in_queue(self, data: dict, queue_name: str) -> None:
         data_bytes = json.dumps(data).encode()
         exchange = await self.get_exchange()
-        self.logger.debug(f'Send message in {queue_name}. Message: {data}')
+        self.logger.debug(f'Send message in "{queue_name}". Message: {data}')
         await exchange.publish(Message(data_bytes), routing_key=queue_name)
-
-    async def is_connected(self) -> LiveProbeStatus:
-        return LiveProbeStatus(service_name='RabbitMQ', status=self.connected)
 
     def on_close_connection(self, *args):
         self.logger.error('Lost connection to RabbitMQ...')

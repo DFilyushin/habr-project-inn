@@ -35,3 +35,15 @@ docker compose up
   "documentDate": "2021-12-31"
 }
 ```
+
+Результат будет отправлен в очередь, указанную в reply-to заголовка сообщения. Формат ответа:
+
+```json
+{
+  "requestId": "b48bc1b5-996f-4a8b-99b2-2dcf85224070",
+  "inn":"125441241013",
+  "details": "",
+  "cashed": false,
+  "elapsed_time": 0.1425
+}
+```
