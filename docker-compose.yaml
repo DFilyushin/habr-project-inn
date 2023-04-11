@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  inn:
+    container_name: inn
+    restart: always
+    build:
+      dockerfile: ./Dockerfile
+      context: .
+    entrypoint: ["python", "/app/inn_service/main.py"]
+    env_file:
+      - .env
+    depends_on:
+      - rabbitmq
+      - mongo
+    ports:
+      - "80:80"
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: mqadmin
+      RABBITMQ_DEFAULT_PASS: mqadmin
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:15672" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  mongo:
+    container_name: mongo
+    image: mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: qwerty
+    volumes:
+      - ./mongodb/database:/data/db
+    ports:
+      - "27017:27017"

@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "habr-project-inn"
+version = "0.1.0"
+description = "INN service"
+authors = ["Dmitriy Filyushin <dmitriy.filyushin@yandex.ru>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+aio-pika = "~9.0.5"
+motor = "~3.1.2"
+pydantic = "~1.10.7"
+injector = "~0.20.1"
+aiohttp = "~3.8.4"
+fastapi = "~0.95.0"
+uvicorn = "~0.21.1"
+fastapi-utils = "~0.2.1"
+typer = "~0.7.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
