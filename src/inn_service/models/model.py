@@ -12,7 +12,7 @@ class ClientDataModel(BaseModel):
     last_name: str
     middle_name: str
     birth_date: datetime
-    birth_place: str
+    birth_place: str = Field(default='')
     passport_num: str
     document_date: datetime
     executed_at: Optional[datetime]
