@@ -27,7 +27,7 @@ class InnService:
 
     async def get_client_inn_from_storage(self, client_data: RequestMqSerializer) -> Optional[ClientDataModel]:
         client_passport = f'{client_data.document_serial} {client_data.document_number}'
-        client_request = await self.storage_repository.find_request(client_passport, client_data.request_id)
+        client_request = await self.storage_repository.find_client_data(client_passport, client_data.request_id)
         return client_request
 
     def update_status(self, model: ClientDataModel, inn: str, error: str) -> None:
@@ -60,7 +60,7 @@ class InnService:
             error = str(exception)
 
         self.update_status(model, result, error)
-        await self.storage_repository.save_request(model)
+        await self.storage_repository.save_client_data(model)
 
         return ClientDataDTO(
             request_id=model.request_id,

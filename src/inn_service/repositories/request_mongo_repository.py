@@ -16,7 +16,7 @@ class RequestRepository(BaseRepository):
 
     @property
     def collection_name(self) -> str:
-        return 'request'
+        return 'clients'
 
     @property
     def collection_indexes(self) -> Iterable[IndexDef]:
@@ -25,11 +25,11 @@ class RequestRepository(BaseRepository):
             IndexDef(name='request_id', sort=ASCENDING),
         ]
 
-    async def save_request(self, request: ClientDataModel) -> str:
+    async def save_client_data(self, request: ClientDataModel) -> str:
         record_id = await self.save_document(request.dict())
         return str(record_id)
 
-    async def find_request(self, passport_num: str, request_id: str) -> Optional[ClientDataModel]:
+    async def find_client_data(self, passport_num: str, request_id: str) -> Optional[ClientDataModel]:
         criteria = {
             '$or': [
                 {'passport_num': passport_num},
@@ -40,7 +40,7 @@ class RequestRepository(BaseRepository):
         if result:
             return ClientDataModel(**result)
 
-    async def update_request(self, request_id: str, replacement_data: dict) -> None:
+    async def update_client_data(self, request_id: str, replacement_data: dict) -> None:
         await self.update_document(
             {
                 'request_id': request_id

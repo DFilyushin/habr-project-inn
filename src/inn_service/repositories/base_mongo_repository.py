@@ -17,7 +17,7 @@ class BaseRepository(StartupEventMixin):
 
     def __init__(self, mongodb_connection_manager: MongoConnectionManager, setting: Settings) -> None:
         self.mongodb_connection_manager = mongodb_connection_manager
-        self.database = setting.mongo_name
+        self.db_name = setting.mongo_name
 
     @property
     def collection_name(self) -> str:
@@ -35,7 +35,7 @@ class BaseRepository(StartupEventMixin):
         Создание индекса в фоне
         """
         connection = await self.mongodb_connection_manager.get_connection()
-        collection = connection[self.database][self.collection_name]
+        collection = connection[self.db_name][self.collection_name]
         await collection.create_index([(field_name, sort_id), ], background=True)
 
     async def create_indexes(self) -> None:
@@ -49,11 +49,8 @@ class BaseRepository(StartupEventMixin):
 
     async def get_one_document(self, criteria: dict) -> Optional[dict]:
         connection = await self.mongodb_connection_manager.get_connection()
-        collection = connection[self.database][self.collection_name]
-
-        data = await collection.find_one(criteria)
-
-        return data
+        collection = connection[self.db_name][self.collection_name]
+        return await collection.find_one(criteria)
 
     async def get_list_document(
             self,
@@ -65,7 +62,7 @@ class BaseRepository(StartupEventMixin):
         if not sort_criteria:
             sort_criteria = []
         connection = await self.mongodb_connection_manager.get_connection()
-        cursor = connection[self.database][self.collection_name].find(
+        cursor = connection[self.db_name][self.collection_name].find(
             criteria,
             limit=limit,
             skip=skip,
@@ -79,9 +76,9 @@ class BaseRepository(StartupEventMixin):
 
     async def save_document(self, data: dict) -> str:
         connection = await self.mongodb_connection_manager.get_connection()
-        result = await connection[self.database][self.collection_name].insert_one(data)
+        result = await connection[self.db_name][self.collection_name].insert_one(data)
         return result.inserted_id
 
     async def update_document(self, criteria: dict, data: dict) -> None:
         connection = await self.mongodb_connection_manager.get_connection()
-        await connection[self.database][self.collection_name].update_one(criteria, {'$set': data})
+        await connection[self.db_name][self.collection_name].update_one(criteria, {'$set': data})

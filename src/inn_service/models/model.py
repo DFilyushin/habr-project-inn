@@ -36,10 +36,6 @@ class ClientDataModel(BaseModel):
         end = self.executed_at or datetime.utcnow()
         return (end - self.created_at).total_seconds()
 
-    def set_result(self, inn: str) -> None:
-        self.inn = inn
-        self.executed_at = datetime.utcnow()
-
 
 class ClientDataDTO(BaseModel):
     request_id: Optional[str] = Field(alias='requestId')
