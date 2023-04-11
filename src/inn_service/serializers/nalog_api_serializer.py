@@ -32,7 +32,6 @@ class NalogApiRequestSerializer(BaseModel):
             first_name=request.first_name,
             middle_name=request.middle_name,
             birth_date=request.birth_date.strftime('%d.%m.%Y'),
-            birth_place=request.birth_place,
             doc_number=document_number,
             doc_date=request.document_date.strftime('%d.%m.%Y')
         )

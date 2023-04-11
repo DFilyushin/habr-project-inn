@@ -27,7 +27,7 @@ class ContainerManager:
     def get_container(self) -> Injector:
         return self._container
 
-    def get_live_probe_handler_collection(self) -> List[Type[Callable]]:
+    def get_live_probe_handlers(self) -> List[Type[Callable]]:
         """
         Получить список обработчиков реализующих миксину проверка liveness probe EventLiveProbeMixin
         """

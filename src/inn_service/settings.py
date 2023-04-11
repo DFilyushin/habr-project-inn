@@ -5,8 +5,8 @@ from pydantic import BaseSettings
 
 class Settings(BaseSettings):
     app_name: str = 'INN service'
-    app_request_retry_times: int
-    app_request_retry_sec: int
+    app_request_retry_times: int  # Количество попыток обработки внешнего запроса
+    app_request_retry_sec: int  # Время задержки в секундах перед повторной обработкой запроса
 
     http_host: str
     http_port: int
@@ -30,10 +30,10 @@ class Settings(BaseSettings):
     rabbitmq_prefetch_count: int
     rabbitmq_source_queue_name: str
 
-    client_nalog_url: str
-    client_nalog_timeout_sec: int
-    client_nalog_retries: int
-    client_nalog_wait_sec: int
+    client_nalog_url: str  # Адрес внешнего сервиса для получения ИНН
+    client_nalog_timeout_sec: int  # Таймаут ожидания ответа от сервиса
+    client_nalog_retries: int  # Количество попыток запросов к внешнему сервису
+    client_nalog_wait_sec: int  # Время ожидания между попытками client_nalog_retries
 
     @property
     def mongo_dsn(self) -> str:

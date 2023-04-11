@@ -2,7 +2,7 @@ import asyncio
 from typing import Type
 
 from core.container_manager import Container, ContainerManager
-from infrastructure.queues.queue_manager import QueueManager
+from infrastructure.queue_manager.queue_manager import QueueManager
 from infrastructure.http_server.http_server_manager import ServerAPIManager
 from infrastructure.handlers.request_handler import RequestHandler
 from services.live_probe_service import LiveProbeService
@@ -29,7 +29,7 @@ class Application:
         request_handler = self.container.get(RequestHandler)
         self.queue_manager.add_handler(request_handler)
 
-        live_probe_handlers = self.container_manager.get_live_probe_handler_collection()
+        live_probe_handlers = self.container_manager.get_live_probe_handlers()
         for handler in live_probe_handlers:
             self.live_probe_service.add_component(handler)
 

@@ -8,7 +8,7 @@ from connection_managers.rabbitmq_connection_manager import RabbitConnectionMana
 from connection_managers.mongo_connection_manager import MongoConnectionManager
 from services.inn_service import InnService
 from services.live_probe_service import LiveProbeService
-from infrastructure.queues.queue_manager import QueueManager
+from infrastructure.queue_manager.queue_manager import QueueManager
 from infrastructure.handlers.request_handler import RequestHandler
 from clients.inn_nalog_client import NalogApiClient
 from repositories.request_mongo_repository import RequestRepository

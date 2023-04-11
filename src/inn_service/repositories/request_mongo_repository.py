@@ -1,6 +1,5 @@
 from typing import Iterable, Optional
 
-from bson import ObjectId
 from pymongo import ASCENDING
 
 from repositories.base_mongo_repository import BaseRepository
@@ -27,7 +26,7 @@ class RequestRepository(BaseRepository):
         ]
 
     async def save_request(self, request: RequestModel) -> str:
-        record_id = await self.save_data(request.dict())
+        record_id = await self.save_document(request.dict())
         return str(record_id)
 
     async def find_request(self, passport_num: str, request_id: str) -> Optional[RequestModel]:
@@ -37,12 +36,12 @@ class RequestRepository(BaseRepository):
                 {'request_id': request_id}
             ]
         }
-        result = await self.get_data(criteria)
+        result = await self.get_one_document(criteria)
         if result:
             return RequestModel(**result)
 
     async def update_request(self, request_id: str, replacement_data: dict) -> None:
-        await self.update_data(
+        await self.update_document(
             {
                 'request_id': request_id
             },

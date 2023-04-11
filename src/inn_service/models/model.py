@@ -27,7 +27,6 @@ class RequestModel(BaseModel):
             last_name=request.last_name,
             middle_name=request.middle_name,
             birth_date=datetime.combine(request.birth_date, datetime.min.time()),
-            birth_place=request.birth_place,
             passport_num='{} {}'.format(request.document_serial, request.document_number),
             document_date=datetime.combine(request.document_date, datetime.min.time()),
         )

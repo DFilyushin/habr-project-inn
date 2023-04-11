@@ -15,11 +15,7 @@ class IndexDef:
 
 class BaseRepository(StartupEventMixin):
 
-    def __init__(
-            self,
-            mongodb_connection_manager: MongoConnectionManager,
-            setting: Settings
-    ) -> None:
+    def __init__(self, mongodb_connection_manager: MongoConnectionManager, setting: Settings) -> None:
         self.mongodb_connection_manager = mongodb_connection_manager
         self.database = setting.mongo_name
 
@@ -51,7 +47,7 @@ class BaseRepository(StartupEventMixin):
             tasks.append(self.create_index(index_item.name, index_item.sort))
         asyncio.ensure_future(asyncio.gather(*tasks))
 
-    async def get_data(self, criteria: dict) -> Optional[dict]:
+    async def get_one_document(self, criteria: dict) -> Optional[dict]:
         connection = await self.mongodb_connection_manager.get_connection()
         collection = connection[self.database][self.collection_name]
 
@@ -59,7 +55,7 @@ class BaseRepository(StartupEventMixin):
 
         return data
 
-    async def get_list_data(
+    async def get_list_document(
             self,
             criteria: dict,
             sort_criteria: Optional[list] = None,
@@ -81,15 +77,11 @@ class BaseRepository(StartupEventMixin):
             result.append(data)
         return result
 
-    async def save_data(self, data: dict) -> str:
+    async def save_document(self, data: dict) -> str:
         connection = await self.mongodb_connection_manager.get_connection()
         result = await connection[self.database][self.collection_name].insert_one(data)
         return result.inserted_id
 
-    async def update_data(self, criteria: dict, data: dict) -> None:
+    async def update_document(self, criteria: dict, data: dict) -> None:
         connection = await self.mongodb_connection_manager.get_connection()
         await connection[self.database][self.collection_name].update_one(criteria, {'$set': data})
-
-    async def add_nested_item(self, criteria: dict, data: dict) -> None:
-        connection = await self.mongodb_connection_manager.get_connection()
-        await connection[self.database][self.collection_name].update_one(criteria, {'$push': data})

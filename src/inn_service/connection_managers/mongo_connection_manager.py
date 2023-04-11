@@ -52,7 +52,8 @@ class MongoConnectionManager(StartupEventMixin, ShutdownEventMixin, EventLivePro
 
     async def is_connected(self) -> LiveProbeStatus:
         try:
-            self._connection.is_mongos
+            db = self._connection.get_database(self._mongo_db)
+            await db.list_collection_names()
             status = True
         except ServerSelectionTimeoutError:
             status = False

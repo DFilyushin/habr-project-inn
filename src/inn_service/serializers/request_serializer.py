@@ -8,7 +8,6 @@ class RequestSerializer(BaseModel):
     last_name: str = Field(alias='lastName')
     middle_name: str = Field(alias='middleName')
     birth_date: date = Field(alias='birthDate')
-    birth_place: str = Field(alias='birthPlace')
     document_serial: str = Field(alias='documentSerial')
     document_number: str = Field(alias='documentNumber')
     document_date: date = Field(alias='documentDate')
