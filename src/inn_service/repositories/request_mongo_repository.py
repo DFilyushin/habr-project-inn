@@ -5,7 +5,7 @@ from pymongo import ASCENDING
 from repositories.base_mongo_repository import BaseRepository
 from connection_managers.mongo_connection_manager import MongoConnectionManager
 from repositories.base_mongo_repository import IndexDef
-from models.model import RequestModel
+from models.model import ClientDataModel
 from settings import Settings
 
 
@@ -25,11 +25,11 @@ class RequestRepository(BaseRepository):
             IndexDef(name='request_id', sort=ASCENDING),
         ]
 
-    async def save_request(self, request: RequestModel) -> str:
+    async def save_request(self, request: ClientDataModel) -> str:
         record_id = await self.save_document(request.dict())
         return str(record_id)
 
-    async def find_request(self, passport_num: str, request_id: str) -> Optional[RequestModel]:
+    async def find_request(self, passport_num: str, request_id: str) -> Optional[ClientDataModel]:
         criteria = {
             '$or': [
                 {'passport_num': passport_num},
@@ -38,7 +38,7 @@ class RequestRepository(BaseRepository):
         }
         result = await self.get_one_document(criteria)
         if result:
-            return RequestModel(**result)
+            return ClientDataModel(**result)
 
     async def update_request(self, request_id: str, replacement_data: dict) -> None:
         await self.update_document(

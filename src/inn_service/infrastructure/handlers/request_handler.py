@@ -6,9 +6,9 @@ from infrastructure.handlers.base_handler import BaseHandler
 from connection_managers.rabbitmq_connection_manager import RabbitConnectionManager
 from settings import Settings
 from services.inn_service import InnService
-from models.model import RequestDTO
+from models.model import ClientDataDTO
 from core.exceptions import HandlerNoRequestIdException
-from serializers.request_serializer import RequestSerializer
+from serializers.request_serializer import RequestMqSerializer
 
 
 class RequestHandler(BaseHandler):
@@ -38,7 +38,7 @@ class RequestHandler(BaseHandler):
         return self.retry_sec
 
     def get_error_response(self, request_id: str, error_message: str) -> dict:
-        response = RequestDTO(
+        response = ClientDataDTO(
             request_id=request_id,
             inn='',
             details=error_message,
@@ -62,7 +62,7 @@ class RequestHandler(BaseHandler):
 
         self.logger.info(f'Get request {request_id} for response {result_queue}')
 
-        client_data = RequestSerializer.parse_obj(message)
+        client_data = RequestMqSerializer.parse_obj(message)
 
         response = await self.service.get_client_inn(client_data)
 

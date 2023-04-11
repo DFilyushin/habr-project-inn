@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 
-from serializers.request_serializer import RequestSerializer
+from serializers.request_serializer import RequestMqSerializer
 
 
 class NalogApiRequestSerializer(BaseModel):
@@ -21,7 +21,7 @@ class NalogApiRequestSerializer(BaseModel):
         return f'{self.last_name} {self.first_name} {self.middle_name}'
 
     @classmethod
-    def create_from_request(cls, request: RequestSerializer) -> 'NalogApiRequestSerializer':
+    def create_from_request(cls, request: RequestMqSerializer) -> 'NalogApiRequestSerializer':
         document_number = '{} {} {}'.format(
             request.document_serial[0:2],
             request.document_serial[2:4],

@@ -2,7 +2,7 @@ from datetime import date
 from pydantic import BaseModel, Field
 
 
-class RequestSerializer(BaseModel):
+class RequestMqSerializer(BaseModel):
     request_id: str = Field(alias='requestId')
     first_name: str = Field(alias='firstName')
     last_name: str = Field(alias='lastName')

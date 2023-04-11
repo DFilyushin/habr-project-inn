@@ -2,10 +2,10 @@ from typing import Optional
 from pydantic import BaseModel, Field
 from datetime import date, datetime
 
-from serializers.request_serializer import RequestSerializer
+from serializers.request_serializer import RequestMqSerializer
 
 
-class RequestModel(BaseModel):
+class ClientDataModel(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     request_id: str
     first_name: str
@@ -20,8 +20,8 @@ class RequestModel(BaseModel):
     error: Optional[str]
 
     @classmethod
-    def create_from_request(cls, request: RequestSerializer) -> 'RequestModel':
-        return RequestModel(
+    def create_from_request(cls, request: RequestMqSerializer) -> 'ClientDataModel':
+        return ClientDataModel(
             request_id=request.request_id,
             first_name=request.first_name,
             last_name=request.last_name,
@@ -41,7 +41,7 @@ class RequestModel(BaseModel):
         self.executed_at = datetime.utcnow()
 
 
-class RequestDTO(BaseModel):
+class ClientDataDTO(BaseModel):
     request_id: Optional[str] = Field(alias='requestId')
     inn: str = Field(alias='inn')
     details: Optional[str] = Field('', alias='details')
